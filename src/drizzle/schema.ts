@@ -1,5 +1,6 @@
 import { pgTable, serial, text, integer, boolean, numeric, timestamp, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import {relations} from 'drizzle-orm'
+import { Many } from 'drizzle-orm';
 
 // Restaurant table
 export const restaurant = pgTable('restaurant', {
@@ -27,7 +28,7 @@ export const restaurant_owner = pgTable('restaurant_owner', {
     restaurant_id: integer('restaurant_id'),
     owner_id: integer('owner_id'),
 }, table => ({
-    pk: primaryKey(table.restaurant_id, table.owner_id)
+    pk: primaryKey({ columns: [table.restaurant_id, table.owner_id] })
 }));
 
 export const restaurantOwnerRelations = relations(restaurant_owner, ({ one }) => ({
@@ -71,14 +72,13 @@ export const menuItemRelations = relations(menu_item, ({ one, many }) => ({
 export const category = pgTable('category', {
     id: serial('id').primaryKey(),
     name: text('name'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
 });
 
 export const categoryRelations = relations(category, ({ many }) => ({
     menu_items: many(menu_item),
 }));
 
+// orders Table
 export const orders = pgTable('orders', {
     id: serial('id').primaryKey(),
     restaurant_id: integer('restaurant_id'),
@@ -162,8 +162,6 @@ export const orderStatusRelations = relations(order_status, ({ one }) => ({
 export const status_catalog = pgTable('status_catalog', {
     id: serial('id').primaryKey(),
     name: text('name'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
 });
 
 export const statusCatalogRelations = relations(status_catalog, ({ many }) => ({
@@ -216,9 +214,11 @@ export const usersRelations = relations(users, ({ many }) => ({
 // Comment table
 export const comment = pgTable('comment', {
     id: serial('id').primaryKey(),
-    content: text('content'),
     user_id: integer('user_id'),
     order_id: integer('order_id'),
+    comment_text: text('comment'),
+    is_complaint: boolean('is_complaint'),
+    is_praise: boolean('is_praise'),
     created_at: timestamp('created_at').defaultNow(),
     updated_at: timestamp('updated_at').defaultNow(),
 });
@@ -267,6 +267,7 @@ export const city = pgTable('city', {
     created_at: timestamp('created_at').defaultNow(),
     updated_at: timestamp('updated_at').defaultNow(),
 });
+
 // many to one and one to many relationships
 export const cityRelations = relations(city, ({ many, one }) => ({
     addresses: many(address),
