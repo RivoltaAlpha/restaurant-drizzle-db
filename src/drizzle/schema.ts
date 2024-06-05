@@ -1,16 +1,17 @@
 import { pgTable, serial, text, integer, boolean, numeric, timestamp, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
-import {relations} from 'drizzle-orm'
+import {relations} from 'drizzle-orm';
 import { Many } from 'drizzle-orm';
+
 
 // Restaurant table
 export const restaurant = pgTable('restaurant', {
     id: serial('id').primaryKey(),
-    name: text('name'),
-    street_address: text('street_address'),
-    zip_code: text('zip_code'),
-    city_id: integer('city_id'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow()
+    name: text('name').notNull(),
+    street_address: text('street_address').notNull().references(() => address.street_address_1, { onDelete: "cascade" }),
+    zip_code: text('zip_code').notNull().references(() => address.zip_code, { onDelete: "cascade" }),
+    city_id: integer('city_id').notNull().references(() => city.id, { onDelete: "cascade" }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const restaurantRelations = relations(restaurant, ({ one, many }) => ({
@@ -25,8 +26,8 @@ export const restaurantRelations = relations(restaurant, ({ one, many }) => ({
 
 // RestaurantOwner table
 export const restaurant_owner = pgTable('restaurant_owner', {
-    restaurant_id: integer('restaurant_id'),
-    owner_id: integer('owner_id'),
+    restaurant_id: integer('restaurant_id').notNull().references(() => restaurant.id, {onDelete:'cascade'}),
+    owner_id: integer('owner_id').notNull().references(() => users.id, {onDelete:'cascade'}),
 }, table => ({
     pk: primaryKey({ columns: [table.restaurant_id, table.owner_id] })
 }));
@@ -45,15 +46,15 @@ export const restaurantOwnerRelations = relations(restaurant_owner, ({ one }) =>
 // MenuItem table
 export const menu_item = pgTable('menu_item', {
     id: serial('id').primaryKey(),
-    name: text('name'),
-    restaurant_id: integer('restaurant_id'),
-    category_id: integer('category_id'),
-    description: text('description'),
-    ingredients: text('ingredients'),
-    price: numeric('price', { precision: 10, scale: 2 }),
-    active: boolean('active'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    name: text('name').notNull(),
+    restaurant_id: integer('restaurant_id').notNull().references(() => restaurant.id, { onDelete: "cascade" }),
+    category_id: integer('category_id').notNull().references(() => category.id, { onDelete: "cascade" }),
+    description: text('description').notNull(),
+    ingredients: text('ingredients').notNull(),
+    price: numeric('price', { precision: 10, scale: 2 }).notNull(),
+    active: boolean('active').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const menuItemRelations = relations(menu_item, ({ one, many }) => ({
@@ -71,7 +72,7 @@ export const menuItemRelations = relations(menu_item, ({ one, many }) => ({
 // Category table
 export const category = pgTable('category', {
     id: serial('id').primaryKey(),
-    name: text('name'),
+    name: text('name').notNull(),
 });
 
 export const categoryRelations = relations(category, ({ many }) => ({
@@ -81,18 +82,18 @@ export const categoryRelations = relations(category, ({ many }) => ({
 // orders Table
 export const orders = pgTable('orders', {
     id: serial('id').primaryKey(),
-    restaurant_id: integer('restaurant_id'),
-    estimated_delivery_time: timestamp('estimated_delivery_time'),
+    restaurant_id: integer('restaurant_id').notNull().references(() => restaurant.id, { onDelete: "cascade" }),
+    estimated_delivery_time: timestamp('estimated_delivery_time').notNull(),
     actual_delivery_time: timestamp('actual_delivery_time'),
-    delivery_address_id: integer('delivery_address_id'),
-    user_id: integer('user_id'),
-    driver_id: integer('driver_id'),
-    price: numeric('price', { precision: 10, scale: 2 }),
-    discount: numeric('discount', { precision: 10, scale: 2 }),
-    final_price: numeric('final_price', { precision: 10, scale: 2 }),
+    delivery_address_id: integer('delivery_address_id').notNull(),
+    user_id: integer('user_id').notNull().references(() => users.id, { onDelete: "cascade" }),
+    driver_id: integer('driver_id').notNull().references(() => driver.id, { onDelete: "cascade" }),
+    price: numeric('price', { precision: 10, scale: 2 }).notNull(),
+    discount: numeric('discount', { precision: 10, scale: 2 }).notNull(),
+    final_price: numeric('final_price', { precision: 10, scale: 2 }).notNull(),
     comment: text('comment'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -120,11 +121,11 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
 // OrderMenuItem table
 export const order_menu_item = pgTable('order_menu_item', {
     id: serial('id').primaryKey(),
-    order_id: integer('order_id'),
-    menu_item_id: integer('menu_item_id'),
-    quantity: integer('quantity'),
-    item_price: numeric('item_price', { precision: 10, scale: 2 }),
-    price: numeric('price', { precision: 10, scale: 2 }),
+    order_id: integer('order_id').notNull().references(() => orders.id, { onDelete: "cascade" }),
+    menu_item_id: integer('menu_item_id').notNull().references(() => menu_item.id, { onDelete: "cascade" }),
+    quantity: integer('quantity').notNull(),
+    item_price: numeric('item_price', { precision: 10, scale: 2 }).notNull(),
+    price: numeric('price', { precision: 10, scale: 2 }).notNull(),
     comment: text('comment'),
 });
 
@@ -142,9 +143,9 @@ export const orderMenuItemRelations = relations(order_menu_item, ({ one }) => ({
 // OrderStatus table
 export const order_status = pgTable('order_status', {
     id: serial('id').primaryKey(),
-    order_id: integer('order_id'),
-    status_catalog_id: integer('status_catalog_id'),
-    created_at: timestamp('created_at').defaultNow(),
+    order_id: integer('order_id').notNull().references(() => orders.id, { onDelete: "cascade" }),
+    status_catalog_id: integer('status_catalog_id').notNull().references(() => status_catalog.id, { onDelete: "cascade" }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const orderStatusRelations = relations(order_status, ({ one }) => ({
@@ -171,17 +172,17 @@ export const statusCatalogRelations = relations(status_catalog, ({ many }) => ({
 // Driver table
 export const driver = pgTable('driver', {
     id: serial('id').primaryKey(),
-    car_make: text('car_make'),
-    car_model: text('car_model'),
-    car_year: integer('car_year'),
-    user_id: integer('user_id'),
-    online: boolean('online'),
-    delivering: boolean('delivering'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    car_make: text('car_make').notNull(),
+    car_model: text('car_model').notNull(),
+    car_year: integer('car_year').notNull(),
+    user_id: integer('user_id').notNull().references(() => users.id, { onDelete: "cascade" }),
+    online: boolean('online').notNull(),
+    delivering: boolean('delivering').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const driverRelations = relations(driver, ({ one, many }) => ({
+export const driverRelations = relations(driver, ({ many, one }) => ({
     user: one(users, {
         fields: [driver.user_id],
         references: [users.id],
@@ -189,18 +190,19 @@ export const driverRelations = relations(driver, ({ one, many }) => ({
     orders: many(orders),
 }));
 
+
 // Users table
 export const users = pgTable('users', {
     id: serial('id').primaryKey(),
-    name: text('name'),
-    contact_phone: text('contact_phone'),
-    phone_verified: boolean('phone_verified'),
-    email: text('email'),
-    email_verified: boolean('email_verified'),
-    confirmation_code: text('confirmation_code'),
-    password: text('password'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    name: text('name').notNull(),
+    contact_phone: text('contact_phone').notNull(),
+    phone_verified: boolean('phone_verified').notNull(),
+    email: text('email').notNull(),
+    email_verified: boolean('email_verified').notNull(),
+    confirmation_code: text('confirmation_code').notNull(),
+    password: text('password').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -214,13 +216,13 @@ export const usersRelations = relations(users, ({ many }) => ({
 // Comment table
 export const comment = pgTable('comment', {
     id: serial('id').primaryKey(),
-    user_id: integer('user_id'),
-    order_id: integer('order_id'),
-    comment_text: text('comment'),
-    is_complaint: boolean('is_complaint'),
-    is_praise: boolean('is_praise'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    user_id: integer('user_id').notNull().references(() => users.id, { onDelete: "cascade" }),
+    order_id: integer('order_id').notNull().references(() => orders.id, { onDelete: "cascade" }),
+    comment: text('comment').notNull(),
+    is_complaint: boolean('is_complaint').notNull(),
+    is_praise: boolean('is_praise').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const commentRelations = relations(comment, ({ one }) => ({
@@ -237,18 +239,18 @@ export const commentRelations = relations(comment, ({ one }) => ({
 // Address table
 export const address = pgTable('address', {
     id: serial('id').primaryKey(),
-    street_address_1: text('street_address_1'),
+    street_address_1: text('street_address_1').notNull(),
     street_address_2: text('street_address_2'),
-    zip_code: text('zip_code'),
+    zip_code: text('zip_code').notNull(),
     delivery_instructions: text('delivery_instructions'),
-    user_id: integer('user_id'),
-    city_id: integer('city_id'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    user_id: integer('user_id').notNull().references(() => users.id, { onDelete: "cascade" }),
+    city_id: integer('city_id').notNull().references(() => city.id, { onDelete: "cascade" }),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 /// 
-export const addressRelations = relations(address, ({ one }) => ({
+export const addressRelations = relations(address, ({many, one }) => ({
     user: one(users, {
         fields: [address.user_id],
         references: [users.id],
@@ -257,18 +259,16 @@ export const addressRelations = relations(address, ({ one }) => ({
         fields: [address.city_id],
         references: [city.id],
     }),
+    orders: many(orders),
 }));
 
 // City table
 export const city = pgTable('city', {
     id: serial('id').primaryKey(),
-    name: text('name'),
-    state_id: integer('state_id'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    name: text('name').notNull(),
+    state_id: integer('state_id').notNull().references(() => state.id, { onDelete: "cascade" }),
 });
 
-// many to one and one to many relationships
 export const cityRelations = relations(city, ({ many, one }) => ({
     addresses: many(address),
     state: one(state, {
@@ -281,10 +281,8 @@ export const cityRelations = relations(city, ({ many, one }) => ({
 // State table
 export const state = pgTable('state', {
     id: serial('id').primaryKey(),
-    name: text('name'),
-    code: text('code'),
-    created_at: timestamp('created_at').defaultNow(),
-    updated_at: timestamp('updated_at').defaultNow(),
+    name: text('name').notNull(),
+    code: text('code').notNull(),
 });
 
 export const stateRelations = relations(state, ({ many }) => ({
